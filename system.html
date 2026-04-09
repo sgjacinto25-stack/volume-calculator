@@ -1,0 +1,52 @@
+using System;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddRouting();
+var app = builder.Build();
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.MapPost("/api/volume", async (HttpContext ctx) =>
+{
+    try
+    {
+        var req = await System.Text.Json.JsonSerializer.DeserializeAsync<VolumeRequest>(ctx.Request.Body, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (req == null) { ctx.Response.StatusCode = 400; await ctx.Response.WriteAsJsonAsync(new { error = "invalid request" }); return; }
+
+        double vol = req.Shape?.ToLower() switch
+        {
+            "sphere" => VolumeLibVB.VolumeCalculator.SphereVolume(GetParam(req.Parameters, "radius")),
+            "ellipsoid" => VolumeLibVB.VolumeCalculator.EllipsoidVolume(GetParam(req.Parameters, "a"), GetParam(req.Parameters, "b"), GetParam(req.Parameters, "c")),
+            "crosssections" => VolumeLibVB.VolumeCalculator.VolumeFromCrossSections(req.Areas ?? Array.Empty<double>(), req.Zs),
+            _ => throw new ArgumentException("unknown shape")
+        };
+
+        await ctx.Response.WriteAsJsonAsync(new { volume = vol });
+    }
+    catch (Exception ex)
+    {
+        ctx.Response.StatusCode = 400;
+        await ctx.Response.WriteAsJsonAsync(new { error = ex.Message });
+    }
+});
+
+double GetParam(Dictionary<string, double>? dict, string key)
+{
+    if (dict != null && dict.TryGetValue(key, out var v)) return v;
+    throw new ArgumentException($"missing parameter: {key}");
+}
+
+app.Run();
+
+public class VolumeRequest
+{
+    public string? Shape { get; set; }
+    public Dictionary<string, double>? Parameters { get; set; }
+    public double[]? Areas { get; set; }
+    public double[]? Zs { get; set; }
+}
