@@ -1,0 +1,23 @@
+#include <bits/stdc++.h>
+using namespace std;
+// Demo: trapezoidal integration of cross-sectional areas
+int main() {
+    cout << "Enter number of cross-sections: ";
+    int n; if(!(cin>>n)) return 0;
+    vector<double> areas(n), zs(n);
+    cout << "Enter areas (n values):\n";
+    for(int i=0;i<n;++i) cin>>areas[i];
+    cout << "Enter z coordinates (n values), or a non-number to use unit spacing:\n";
+    bool useZ=true;
+    for(int i=0;i<n;++i){
+        if(!(cin>>zs[i])) { useZ=false; break; }
+    }
+    double vol=0;
+    if(!useZ){
+        for(int i=0;i<n-1;++i) vol += 0.5*(areas[i]+areas[i+1])*1.0;
+    } else {
+        for(int i=0;i<n-1;++i) vol += 0.5*(areas[i]+areas[i+1])*(zs[i+1]-zs[i]);
+    }
+    cout << "Volume = " << vol << "\n";
+    return 0;
+}
