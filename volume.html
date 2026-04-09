@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Volume Calculator</title></head>
+<body>
+<h1>Volume Calculator</h1>
+
+<label>Shape:
+  <select id="shape">
+    <option value="sphere">Sphere</option>
+    <option value="ellipsoid">Ellipsoid</option>
+    <option value="crossSections">Irregular (cross-sections)</option>
+  </select>
+</label>
+
+<div id="params">
+  <div id="sphereParams">
+    Radius: <input id="radius" type="number" step="any" value="1" />
+  </div>
+  <div id="ellipsoidParams" style="display:none">
+    a: <input id="a" type="number" step="any" value="1" /> b: <input id="b" type="number" step="any" value="1" /> c: <input id="c" type="number" step="any" value="1" />
+  </div>
+  <div id="crossParams" style="display:none">
+    Cross-section areas (one per line):<br/>
+    <textarea id="areas" rows="6" cols="40">1
+1
+1</textarea><br/>
+    Optional Z coordinates (one per line, same count):<br/>
+    <textarea id="zs" rows="3" cols="40"></textarea>
+  </div>
+</div>
+
+<button id="calc">Calculate</button>
+<pre id="out"></pre>
+
+<script>
+const shapeSel = document.getElementById('shape');
+const sphereDiv = document.getElementById('sphereParams');
+const ellipsoidDiv = document.getElementById('ellipsoidParams');
+const crossDiv = document.getElementById('crossParams');
+shapeSel.addEventListener('change', () => {
+  sphereDiv.style.display = shapeSel.value==='sphere' ? '' : 'none';
+  ellipsoidDiv.style.display = shapeSel.value==='ellipsoid' ? '' : 'none';
+  crossDiv.style.display = shapeSel.value==='crossSections' ? '' : 'none';
+});
+
+document.getElementById('calc').addEventListener('click', async () => {
+  const shape = shapeSel.value;
+  const body = { shape };
+  if (shape==='sphere') body.parameters = { radius: parseFloat(document.getElementById('radius').value) };
+  if (shape==='ellipsoid') body.parameters = { a: parseFloat(document.getElementById('a').value), b: parseFloat(document.getElementById('b').value), c: parseFloat(document.getElementById('c').value) };
+  if (shape==='crossSections') {
+    const areas = document.getElementById('areas').value.split('\n').map(s=>s.trim()).filter(Boolean).map(Number);
+    const zsText = document.getElementById('zs').value.trim();
+    body.areas = areas;
+    if (zsText) body.zs = zsText.split('\n').map(s=>s.trim()).filter(Boolean).map(Number);
+  }
+
+  const res = await fetch('/api/volume', { method:'POST', body:JSON.stringify(body), headers:{'Content-Type':'application/json'} });
+  const json = await res.json();
+  document.getElementById('out').textContent = JSON.stringify(json, null, 2);
+});
+</script>
+</body>
+</html>
