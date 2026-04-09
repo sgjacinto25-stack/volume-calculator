@@ -1,0 +1,37 @@
+Imports System
+
+Namespace VolumeLibVB
+    Public Class VolumeCalculator
+        Public Shared Function SphereVolume(radius As Double) As Double
+            If radius < 0 Then Throw New ArgumentException("radius must be non-negative")
+            Return (4.0 / 3.0) * Math.PI * Math.Pow(radius, 3)
+        End Function
+
+        Public Shared Function EllipsoidVolume(a As Double, b As Double, c As Double) As Double
+            If a < 0 OrElse b < 0 OrElse c < 0 Then Throw New ArgumentException("axes must be non-negative")
+            Return (4.0 / 3.0) * Math.PI * a * b * c
+        End Function
+
+        ' Integrate cross-sectional areas. If zs is provided it must match areas length and are the z coordinates.
+        Public Shared Function VolumeFromCrossSections(areas() As Double, Optional zs() As Double = Nothing) As Double
+            If areas Is Nothing OrElse areas.Length = 0 Then Throw New ArgumentException("areas required")
+            Dim n = areas.Length
+            If zs Is Nothing Then
+                ' assume unit spacing between sections; trapezoidal rule
+                Dim vol As Double = 0.0
+                For i = 0 To n - 2
+                    vol += 0.5 * (areas(i) + areas(i + 1)) * 1.0
+                Next
+                Return vol
+            Else
+                If zs.Length <> n Then Throw New ArgumentException("zs length must match areas length")
+                Dim vol As Double = 0.0
+                For i = 0 To n - 2
+                    Dim dz = zs(i + 1) - zs(i)
+                    vol += 0.5 * (areas(i) + areas(i + 1)) * dz
+                Next
+                Return vol
+            End If
+        End Function
+    End Class
+End Namespace
